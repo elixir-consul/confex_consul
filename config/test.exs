@@ -1,4 +1,4 @@
-import Config
+use Config
 
 config :confex_consul,
   consul_address: "https://demo.consul.io/v1/kv",
