@@ -7,6 +7,9 @@ defmodule ConfexConsul do
 
   @impl Confex.Adapter
   def fetch_value(key) do
-    ConfexConsul.ConsulClient.get_value(key)
+    case ConfexConsul.LocalCache.get_value(key) do
+      {:hit, value} -> value
+      :miss -> ConfexConsul.ConsulClient.get_value(key)
+    end
   end
 end
