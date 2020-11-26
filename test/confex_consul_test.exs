@@ -1,8 +1,9 @@
 defmodule ConfexConsulTest do
   use ExUnit.Case
-  doctest ConfexConsul
 
-  test "greets the world" do
-    assert ConfexConsul.hello() == :world
+  test "put value and get value" do
+    {:ok, true} = ConfexConsul.ConsulClient.put_value("test-key", "test-value")
+    {:ok, "test-value"} = ConfexConsul.ConsulClient.get_value("test-key")
   end
+
 end

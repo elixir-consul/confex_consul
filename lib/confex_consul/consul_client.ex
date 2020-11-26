@@ -13,7 +13,7 @@ defmodule ConfexConsul.ConsulClient do
     key
     |> get()
     |> case do
-      {:ok, %{status: 200, body: [%{"Value" => value}]}} -> Base.decode64(value)
+      {:ok, %{status: 200, body: [%{"Value" => value, "Key" => ^key}]}} -> Base.decode64(value)
       {:ok, other_status} -> {:error, other_status}
       other -> other
     end
