@@ -5,5 +5,4 @@ defmodule ConfexConsulTest do
     {:ok, true} = ConfexConsul.ConsulClient.put_value("test-key", "test-value")
     {:ok, "test-value"} = ConfexConsul.ConsulClient.get_value("test-key")
   end
-
 end
