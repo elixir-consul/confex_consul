@@ -12,10 +12,8 @@ jobs:
   check_format:
     runs-on: ubuntu-latest
     name: Check format
-    container:
-      image: elixir:1.9-slim
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Install Dependencies
         run: |
           mix local.rebar --force
@@ -46,23 +44,17 @@ jobs:
             elixir: 1.9.x
           - otp: 22.x
             elixir: 1.9.x
-          - otp: 20.x
-            elixir: 1.8.x
-          - otp: 21.x
-            elixir: 1.8.x
-          - otp: 22.x
-            elixir: 1.8.x
     needs: check_format
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/setup-elixir@v1.2.0
-      with:
-        otp-version: ${{matrix.otp}}
-        elixir-version: ${{matrix.elixir}}
-    - name: Install Dependencies
-      run: |
-        mix local.rebar --force
-        mix local.hex --force
-        mix deps.get
-    - name: Run Tests
-      run: mix test
+      - uses: actions/checkout@v2
+      - uses: actions/setup-elixir@v1
+        with:
+          otp-version: ${{matrix.otp}}
+          elixir-version: ${{matrix.elixir}}
+      - name: Install Dependencies
+        run: |
+          mix local.rebar --force
+          mix local.hex --force
+          mix deps.get
+      - name: Run Tests
+        run: mix test
