@@ -7,11 +7,15 @@ defmodule ConfexConsul.LocalCache do
 
   require Logger
 
-  def get_value(key) do
-    case :ets.lookup(__MODULE__, key) do
-      [{^key, value}] -> {:hit, value}
+  def get(consul_key) do
+    case :ets.lookup(__MODULE__, consul_key) do
+      [{^consul_key, value}] -> {:hit, value}
       _ -> :miss
     end
+  end
+
+  def put(consul_key, consul_value) do
+    true = :ets.insert(__MODULE__, {consul_key, consul_value})
   end
 
   def start_link(_) do
@@ -53,17 +57,31 @@ defmodule ConfexConsul.LocalCache do
     app
     |> Application.get_all_env()
     |> Enum.filter(fn {_, val} -> is_tuple(val) and {:via, ConfexConsul} == elem(val, 0) end)
-    |> Enum.each(fn {_, {_, consul_key}} ->
-      insert_cache(consul_key, ConfexConsul.ConsulClient.get_value(consul_key))
-    end)
+    |> Enum.each(fn {_, app_val} -> refresh_cache_by_consul_key(app_val) end)
   end
 
   @doc false
-  defp insert_cache(consul_key, {:ok, _} = value) do
-    true = :ets.insert(__MODULE__, {consul_key, value})
+  defp refresh_cache_by_consul_key({{:via, ConfexConsul}, consul_key}) do
+    case ConfexConsul.ConsulKv.get_value(consul_key) do
+      {:ok, _} = value -> put(consul_key, value)
+      _ -> true
+    end
   end
 
-  defp insert_cache(_consul_key, _error_value) do
-    true
+  defp refresh_cache_by_consul_key({{:via, ConfexConsul}, consul_key, default_value})
+       when is_binary(consul_key) do
+    case ConfexConsul.ConsulKv.get_value(consul_key) do
+      {:ok, _} = value -> put(consul_key, value)
+      _ -> put(consul_key, {:ok, default_value})
+    end
+  end
+
+  defp refresh_cache_by_consul_key({{:via, ConfexConsul}, _type, consul_key})
+       when is_binary(consul_key) do
+    refresh_cache_by_consul_key({{:via, ConfexConsul}, consul_key})
+  end
+
+  defp refresh_cache_by_consul_key({{:via, ConfexConsul}, _type, consul_key, default_value}) do
+    refresh_cache_by_consul_key({{:via, ConfexConsul}, consul_key, default_value})
   end
 end

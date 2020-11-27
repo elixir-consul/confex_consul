@@ -24,9 +24,7 @@ defmodule ConfexConsul.MixProject do
   defp deps do
     [
       {:confex, "~> 3.5"},
-      {:tesla, "~> 1.4"},
-      {:hackney, "~> 1.16"},
-      {:jason, ">= 1.0.0"}
+      {:consul_kv, "~> 0.1"}
     ]
   end
 end
