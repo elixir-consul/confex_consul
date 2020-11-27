@@ -7,6 +7,9 @@ defmodule ConfexConsul do
 
   @impl Confex.Adapter
   def fetch_value(key) do
-    ConfexConsul.ConsulClient.get_value(key)
+    case ConsulKv.single_get(key) do
+      {:ok, %ConsulKv{value: value}} -> {:ok, value}
+      other -> other
+    end
   end
 end
