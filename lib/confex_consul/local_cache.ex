@@ -4,8 +4,9 @@ defmodule ConfexConsul.LocalCache do
   """
 
   use GenServer
-
   require Logger
+
+  @refresh_interval Application.get_env(:confex_consul, :local_cache_refresh_interval, 1000)
 
   def get(consul_key) do
     case :ets.lookup(__MODULE__, consul_key) do
@@ -35,18 +36,20 @@ defmodule ConfexConsul.LocalCache do
       Process.cancel_timer(timer)
     end
 
-    refresh_cache()
-    timer = Process.send_after(self(), :refresh, 1000)
+    Application.get_env(:confex_consul, :enable_local_cache_auto_refresh, true) and
+      refresh_cache()
+
+    timer = Process.send_after(self(), :refresh, @refresh_interval)
     {:noreply, %{state | timer: timer}}
   rescue
     e ->
       Logger.error("refresh cache error: #{inspect(e)}")
-      timer = Process.send_after(self(), :refresh, 1000)
+      timer = Process.send_after(self(), :refresh, @refresh_interval)
       {:noreply, %{state | timer: timer}}
   end
 
   @doc false
-  defp refresh_cache() do
+  def refresh_cache() do
     :confex_consul
     |> Application.get_env(:apps)
     |> Enum.each(fn app -> :ok = refresh_cache_by_app(app) end)
