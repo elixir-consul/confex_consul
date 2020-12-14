@@ -21,34 +21,45 @@ defmodule ConfexConsulTest do
     assert "v1" == Confex.get_env(:confex_consul, :only_key)
   end
 
-  test "auto refresh cache" do
-    ConfexConsul.LocalCache.refresh_cache()
-    # default value
-    # cache
-    assert :miss == ConfexConsul.LocalCache.get("#{@prefix}/key_1")
-    assert {:hit, {:ok, "default_value_2"}} == ConfexConsul.LocalCache.get("#{@prefix}/key_2")
-    assert :miss == ConfexConsul.LocalCache.get("#{@prefix}/key_3")
-    assert {:hit, {:ok, "default_value_4"}} == ConfexConsul.LocalCache.get("#{@prefix}/key_4")
-    # confex
-    assert nil == Confex.get_env(:confex_consul, :only_key)
-    assert "default_value_2" == Confex.get_env(:confex_consul, :key_with_default)
-    assert nil == Confex.get_env(:confex_consul, :type_with_key)
-    assert "default_value_4" == Confex.get_env(:confex_consul, :type_with_key_with_default)
-    # set value
-    assert {:ok, true} = ConsulKv.put("#{@prefix}/key_1", "v1")
-    assert {:ok, true} = ConsulKv.put("#{@prefix}/key_2", "v2")
-    assert {:ok, true} = ConsulKv.put("#{@prefix}/key_3", "v3")
-    assert {:ok, true} = ConsulKv.put("#{@prefix}/key_4", "v4")
-    # refresh cache
-    ConfexConsul.LocalCache.refresh_cache()
-    assert {:hit, {:ok, "v1"}} = ConfexConsul.LocalCache.get("#{@prefix}/key_1")
-    assert {:hit, {:ok, "v2"}} = ConfexConsul.LocalCache.get("#{@prefix}/key_2")
-    assert {:hit, {:ok, "v3"}} = ConfexConsul.LocalCache.get("#{@prefix}/key_3")
-    assert {:hit, {:ok, "v4"}} = ConfexConsul.LocalCache.get("#{@prefix}/key_4")
-    # confex
-    assert "v1" == Confex.get_env(:confex_consul, :only_key)
-    assert "v2" == Confex.get_env(:confex_consul, :key_with_default)
-    assert "v3" == Confex.get_env(:confex_consul, :type_with_key)
-    assert "v4" == Confex.get_env(:confex_consul, :type_with_key_with_default)
+  describe "auto refresh cache" do
+    test "get default value when no value on consul" do
+      ConfexConsul.LocalCache.refresh_cache()
+      # default value
+      # cache
+      assert :miss == ConfexConsul.LocalCache.get("#{@prefix}/key_1")
+      assert {:hit, {:ok, "default_value_2"}} == ConfexConsul.LocalCache.get("#{@prefix}/key_2")
+      assert :miss == ConfexConsul.LocalCache.get("#{@prefix}/key_3")
+      assert {:hit, {:ok, "default_value_4"}} == ConfexConsul.LocalCache.get("#{@prefix}/key_4")
+      # confex
+      assert nil == Confex.get_env(:confex_consul, :only_key)
+      assert "default_value_2" == Confex.get_env(:confex_consul, :key_with_default)
+      assert nil == Confex.get_env(:confex_consul, :type_with_key)
+      assert "default_value_4" == Confex.get_env(:confex_consul, :type_with_key_with_default)
+    end
+
+    test "get cached values when get values from consul failed" do
+      ConsulKv.put("#{@prefix}/key_1", "v1")
+      ConsulKv.put("#{@prefix}/key_2", "v2")
+      ConsulKv.put("#{@prefix}/key_3", "v3")
+      ConsulKv.put("#{@prefix}/key_4", "v4")
+
+      assert "v1" == Confex.get_env(:confex_consul, :only_key)
+      assert "v2" == Confex.get_env(:confex_consul, :key_with_default)
+      assert "v3" == Confex.get_env(:confex_consul, :type_with_key)
+      assert "v4" == Confex.get_env(:confex_consul, :type_with_key_with_default)
+
+      assert {:hit, {:ok, "v1"}} == ConfexConsul.LocalCache.get("#{@prefix}/key_1")
+      assert {:hit, {:ok, "v2"}} == ConfexConsul.LocalCache.get("#{@prefix}/key_2")
+      assert {:hit, {:ok, "v3"}} == ConfexConsul.LocalCache.get("#{@prefix}/key_3")
+      assert {:hit, {:ok, "v4"}} == ConfexConsul.LocalCache.get("#{@prefix}/key_4")
+
+      _ = ConsulKv.recurse_delete(@prefix)
+      ConfexConsul.LocalCache.refresh_cache()
+
+      assert {:hit, {:ok, "v1"}} == ConfexConsul.LocalCache.get("#{@prefix}/key_1")
+      assert {:hit, {:ok, "v2"}} == ConfexConsul.LocalCache.get("#{@prefix}/key_2")
+      assert {:hit, {:ok, "v3"}} == ConfexConsul.LocalCache.get("#{@prefix}/key_3")
+      assert {:hit, {:ok, "v4"}} == ConfexConsul.LocalCache.get("#{@prefix}/key_4")
+    end
   end
 end
