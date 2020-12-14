@@ -75,7 +75,7 @@ defmodule ConfexConsul.LocalCache do
        when is_binary(consul_key) do
     case ConfexConsul.ConsulKv.get_value(consul_key) do
       {:ok, _} = value -> put(consul_key, value)
-      _ -> put(consul_key, {:ok, default_value})
+      _ -> maybe_put_default_value(consul_key, default_value)
     end
   end
 
@@ -86,5 +86,12 @@ defmodule ConfexConsul.LocalCache do
 
   defp refresh_cache_by_consul_key({{:via, ConfexConsul}, _type, consul_key, default_value}) do
     refresh_cache_by_consul_key({{:via, ConfexConsul}, consul_key, default_value})
+  end
+
+  defp maybe_put_default_value(consul_key, default_value) do
+    case get(consul_key) do
+      {:hit, _value} -> true
+      :miss -> put(consul_key, {:ok, default_value})
+    end
   end
 end
