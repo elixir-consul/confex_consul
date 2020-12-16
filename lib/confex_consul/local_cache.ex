@@ -43,16 +43,29 @@ defmodule ConfexConsul.LocalCache do
     {:noreply, %{state | timer: timer}}
   rescue
     e ->
-      Logger.error("refresh cache error: #{inspect(e)}")
+      Logger.error("<#{__MODULE__}> refresh cache error: #{inspect(e)}")
       timer = Process.send_after(self(), :refresh, @refresh_interval)
       {:noreply, %{state | timer: timer}}
   end
 
   @doc false
   def refresh_cache() do
-    :confex_consul
-    |> Application.get_env(:apps)
-    |> Enum.each(fn app -> :ok = refresh_cache_by_app(app) end)
+    get_confex_consul_config_apps()
+    |> Enum.each(&refresh_cache_by_app/1)
+  end
+
+  @doc false
+  defp get_confex_consul_config_apps do
+    case Application.get_env(:confex_consul, :apps, try_get_app()) do
+      apps when is_list(apps) -> apps
+      nil -> []
+      app -> [app]
+    end
+  end
+
+  @doc false
+  defp try_get_app do
+    Application.get_env(:confex_consul, :app)
   end
 
   @doc false
@@ -66,16 +79,30 @@ defmodule ConfexConsul.LocalCache do
   @doc false
   defp refresh_cache_by_consul_key({{:via, ConfexConsul}, consul_key}) do
     case ConfexConsul.ConsulKv.get_value(consul_key) do
-      {:ok, _} = value -> put(consul_key, value)
-      _ -> true
+      {:ok, _} = value ->
+        put(consul_key, value)
+
+      {:error, reason} ->
+        Logger.error(
+          "<#{__MODULE__}> get value for `#{consul_key}` from consul KV failed: #{inspect(reason)}"
+        )
+
+        true
     end
   end
 
   defp refresh_cache_by_consul_key({{:via, ConfexConsul}, consul_key, default_value})
        when is_binary(consul_key) do
     case ConfexConsul.ConsulKv.get_value(consul_key) do
-      {:ok, _} = value -> put(consul_key, value)
-      _ -> maybe_put_default_value(consul_key, default_value)
+      {:ok, _} = value ->
+        put(consul_key, value)
+
+      {:error, reason} ->
+        Logger.error(
+          "<#{__MODULE__}> get value for `#{consul_key}` from consul KV failed: #{inspect(reason)}"
+        )
+
+        maybe_put_default_value(consul_key, default_value)
     end
   end
 
