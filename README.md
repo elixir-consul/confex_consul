@@ -53,6 +53,7 @@ config :my_app,
     {:via, ConfexConsul}, "decode: my_json_key", %{"default_value" => 1}
   }
 ```
+Note that it only support JSON now(Consul KV supports JSON, HCL and YAML).
 
 ### Config for consul_kv
 The [consul_kv](https://github.com/elixir-consul/consul_kv) is a dependency library that sends requests to Consul KV Store. We can modify it's config:
