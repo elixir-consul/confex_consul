@@ -9,15 +9,15 @@ defmodule ConfexConsul.LocalCache do
 
   @refresh_interval Utils.get_local_cache_refresh_interval()
 
-  def get(consul_key) do
-    case :ets.lookup(__MODULE__, consul_key) do
-      [{^consul_key, value}] -> {:hit, value}
+  def get(key) do
+    case :ets.lookup(__MODULE__, key) do
+      [{^key, value}] -> {:hit, value}
       _ -> :miss
     end
   end
 
-  def put(consul_key, consul_value) do
-    true = :ets.insert(__MODULE__, {consul_key, consul_value})
+  def put(key, consul_value) do
+    true = :ets.insert(__MODULE__, {key, consul_value})
   end
 
   def start_link(_) do
@@ -74,52 +74,50 @@ defmodule ConfexConsul.LocalCache do
     app
     |> Application.get_all_env()
     |> Enum.filter(fn {_, val} -> is_tuple(val) and {:via, ConfexConsul} == elem(val, 0) end)
-    |> Enum.each(fn {_, app_val} -> refresh_cache_by_consul_key(app_val) end)
+    |> Enum.each(fn {_, app_val} -> refresh_cache_by_key(app_val) end)
   end
 
   @doc false
-  defp refresh_cache_by_consul_key({{:via, ConfexConsul}, consul_key}) do
-    case ConfexConsul.ConsulKv.get_value(consul_key) do
+  defp refresh_cache_by_key({{:via, ConfexConsul}, key}) do
+    refresh_cache_by_key(key)
+  end
+
+  defp refresh_cache_by_key({{:via, ConfexConsul}, [:decode, _] = key, default_value}) do
+    refresh_cache_by_key(key, default_value)
+  end
+
+  defp refresh_cache_by_key({{:via, ConfexConsul}, key, default_value}) when is_binary(key) do
+    refresh_cache_by_key(key, default_value)
+  end
+
+  defp refresh_cache_by_key({{:via, ConfexConsul}, _type, key}) do
+    refresh_cache_by_key(key)
+  end
+
+  defp refresh_cache_by_key({{:via, ConfexConsul}, _type, key, default_value}) do
+    refresh_cache_by_key(key, default_value)
+  end
+
+  defp refresh_cache_by_key(key, default_value \\ nil) do
+    case ConfexConsul.ConsulKv.get_value(key) do
       {:ok, _} = value ->
-        put(consul_key, value)
+        put(key, value)
 
       {:error, reason} ->
         Logger.error(
-          "<#{__MODULE__}> get value for `#{consul_key}` from consul KV failed: #{inspect(reason)}"
+          "<#{__MODULE__}> get value for `#{inspect(key)}` from consul KV failed: #{inspect(reason)}"
         )
 
-        true
+        maybe_put_default_value(key, default_value)
     end
   end
 
-  defp refresh_cache_by_consul_key({{:via, ConfexConsul}, consul_key, default_value})
-       when is_binary(consul_key) do
-    case ConfexConsul.ConsulKv.get_value(consul_key) do
-      {:ok, _} = value ->
-        put(consul_key, value)
+  defp maybe_put_default_value(_key, nil), do: true
 
-      {:error, reason} ->
-        Logger.error(
-          "<#{__MODULE__}> get value for `#{consul_key}` from consul KV failed: #{inspect(reason)}"
-        )
-
-        maybe_put_default_value(consul_key, default_value)
-    end
-  end
-
-  defp refresh_cache_by_consul_key({{:via, ConfexConsul}, _type, consul_key})
-       when is_binary(consul_key) do
-    refresh_cache_by_consul_key({{:via, ConfexConsul}, consul_key})
-  end
-
-  defp refresh_cache_by_consul_key({{:via, ConfexConsul}, _type, consul_key, default_value}) do
-    refresh_cache_by_consul_key({{:via, ConfexConsul}, consul_key, default_value})
-  end
-
-  defp maybe_put_default_value(consul_key, default_value) do
-    case get(consul_key) do
+  defp maybe_put_default_value(key, default_value) do
+    case get(key) do
       {:hit, _value} -> true
-      :miss -> put(consul_key, {:ok, default_value})
+      :miss -> put(key, {:ok, default_value})
     end
   end
 end
