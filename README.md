@@ -46,6 +46,14 @@ config :my_app,
   consul_config: {{:via, ConfexConsul}, "consul_my_key"}
 ```
 
+This adapter support to decode the value from Consul KV Store by add a prefix "decode: " for the key:
+```elixir
+config :my_app,
+  consul_json_config: {
+    {:via, ConfexConsul}, "decode: my_json_key", %{"default_value" => 1}
+  }
+```
+
 ### Config for consul_kv
 The [consul_kv](https://github.com/elixir-consul/consul_kv) is a dependency library that sends requests to Consul KV Store. We can modify it's config:
 ```elixir
