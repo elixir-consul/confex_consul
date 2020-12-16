@@ -15,6 +15,7 @@ def deps do
 end
 ```
 ## Usage
+### Config for confex_consul
 To synchronize config from Consul KV Store, we need to specify the refresh interval for the local cache by `local_cache_refresh_interval` in second, default to 60.
 ```elixir
 config :confex_consul,
@@ -43,4 +44,13 @@ config :confex_consul,
 
 config :my_app,
   consul_config: {{:via, ConfexConsul}, "consul_my_key"}
+```
+
+### Config for consul_kv
+The [consul_kv](https://github.com/elixir-consul/consul_kv) is a dependency library that sends requests to Consul KV Store. We can modify it's config:
+```elixir
+config :consul_kv,
+  consul_recv_timeout: 1000,
+  consul_connect_timeout: 1000,
+  consul_kv_address: "https://demo.consul.io/v1/kv"
 ```
