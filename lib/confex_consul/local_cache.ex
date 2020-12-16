@@ -5,8 +5,9 @@ defmodule ConfexConsul.LocalCache do
 
   use GenServer
   require Logger
+  alias ConfexConsul.Utils
 
-  @refresh_interval Application.get_env(:confex_consul, :local_cache_refresh_interval, 1000)
+  @refresh_interval Utils.get_local_cache_refresh_interval()
 
   def get(consul_key) do
     case :ets.lookup(__MODULE__, consul_key) do
