@@ -82,10 +82,6 @@ defmodule ConfexConsul.LocalCache do
     refresh_cache_by_key(key)
   end
 
-  defp refresh_cache_by_key({{:via, ConfexConsul}, [:decode, _] = key, default_value}) do
-    refresh_cache_by_key(key, default_value)
-  end
-
   defp refresh_cache_by_key({{:via, ConfexConsul}, key, default_value}) when is_binary(key) do
     refresh_cache_by_key(key, default_value)
   end

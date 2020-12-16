@@ -17,19 +17,14 @@ defmodule ConfexConsul do
 
   @doc false
   defp get_from_consul_and_cache(key) do
-    with {:ok, value} <- ConfexConsul.ConsulKv.get_value(key) do
-      write_cache_and_return(key, {:ok, value})
+    with {:ok, value} <- ConfexConsul.ConsulKv.get_value(key),
+         _ <- ConfexConsul.LocalCache.put(key, {:ok, value}) do
+      {:ok, value}
     else
       {:error, reason} ->
         Logger.error("<#{__MODULE__}> get_from_consul_and_cache error: #{inspect(reason)}")
 
         :error
     end
-  end
-
-  @doc false
-  defp write_cache_and_return(key, value) do
-    ConfexConsul.LocalCache.put(key, value)
-    value
   end
 end
