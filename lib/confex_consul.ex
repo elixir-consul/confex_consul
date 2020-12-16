@@ -3,30 +3,28 @@ defmodule ConfexConsul do
   Documentation for `ConfexConsul`.
   """
 
+  require Logger
+
   @behaviour Confex.Adapter
 
   @impl Confex.Adapter
-  def fetch_value(consul_key) do
-    case ConfexConsul.LocalCache.get(consul_key) do
+  def fetch_value(key) do
+    case ConfexConsul.LocalCache.get(key) do
       {:hit, value} -> value
-      :miss -> get_from_consul_and_cache(consul_key)
+      :miss -> get_from_consul_and_cache(key)
     end
   end
 
   @doc false
-  defp get_from_consul_and_cache(consul_key) do
-    consul_key
-    |> ConfexConsul.ConsulKv.get_value()
-    |> write_cache_and_return(consul_key)
-  end
+  defp get_from_consul_and_cache(key) do
+    with {:ok, value} <- ConfexConsul.ConsulKv.get_value(key),
+         _ <- ConfexConsul.LocalCache.put(key, {:ok, value}) do
+      {:ok, value}
+    else
+      {:error, reason} ->
+        Logger.error("<#{__MODULE__}> get_from_consul_and_cache error: #{inspect(reason)}")
 
-  @doc false
-  defp write_cache_and_return({:ok, value}, consul_key) do
-    ConfexConsul.LocalCache.put(consul_key, {:ok, value})
-    {:ok, value}
-  end
-
-  defp write_cache_and_return(other, _) do
-    other
+        :error
+    end
   end
 end
