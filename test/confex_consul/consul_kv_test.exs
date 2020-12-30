@@ -1,5 +1,5 @@
 defmodule ConfexConsul.ConsulKvTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   @prefix "test_consul_kv_#{:erlang.system_info(:otp_release)}_#{System.version()}/"
 
@@ -25,13 +25,21 @@ defmodule ConfexConsul.ConsulKvTest do
     end
 
     test "circuit_breaker work when get value" do
-      for _i <- 1..6 do
+      Application.put_env(:confex_consul, :circuit_breaker_switch, true)
+
+      Application.put_env(
+        :confex_consul,
+        :circuit_breaker_option,
+        {{:standard, 2, 2_000}, {:reset, 2_500}}
+      )
+
+      for _i <- 1..3 do
         assert {:error, :not_found} = ConfexConsul.ConsulKv.get_value("not_exist")
       end
 
       assert {:error, :fallback} = ConfexConsul.ConsulKv.get_value("not_exist")
 
-      Process.sleep(5_500)
+      Process.sleep(3_000)
       assert {:error, :not_found} = ConfexConsul.ConsulKv.get_value("not_exist")
     end
   end
