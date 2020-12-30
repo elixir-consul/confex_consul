@@ -73,3 +73,6 @@ config :consul_kv,
   consul_connect_timeout: 1000,
   consul_kv_address: "https://demo.consul.io/v1/kv"
 ```
+
+### Metrics
+ConfexConsul use [telemetry](https://github.com/beam-telemetry/telemetry) to handle metrics and logs. You can find the details in `ConfexConsul.Telemetry`. 
