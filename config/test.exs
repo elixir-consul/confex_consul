@@ -21,7 +21,7 @@ config :confex_consul,
 
 config :confex_consul,
   circuit_breaker_switch: true,
-  circuit_breaker_option: {{:standard, 2, 2_000}, {:reset, 3_000}}
+  circuit_breaker_option: {{:standard, 5, 3_000}, {:reset, 5_000}}
 
 config :consul_kv,
   consul_recv_timeout: 1000,

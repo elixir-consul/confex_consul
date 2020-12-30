@@ -25,13 +25,13 @@ defmodule ConfexConsul.ConsulKvTest do
     end
 
     test "circuit_breaker work when get value" do
-      assert {:error, :not_found} = ConfexConsul.ConsulKv.get_value("not_exist")
-      assert {:error, :not_found} = ConfexConsul.ConsulKv.get_value("not_exist")
-      assert {:error, :not_found} = ConfexConsul.ConsulKv.get_value("not_exist")
+      for _i <- 1..6 do
+        assert {:error, :not_found} = ConfexConsul.ConsulKv.get_value("not_exist")
+      end
 
       assert {:error, :fallback} = ConfexConsul.ConsulKv.get_value("not_exist")
 
-      Process.sleep(5_000)
+      Process.sleep(5_500)
       assert {:error, :not_found} = ConfexConsul.ConsulKv.get_value("not_exist")
     end
   end
