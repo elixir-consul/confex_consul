@@ -55,6 +55,16 @@ config :my_app,
 ```
 Note that it only support JSON now(Consul KV supports JSON, HCL and YAML).
 
+### Config for circuit_breaker
+We can config circuit_breaker for Consul KV Store to reduce requests when Consul KV has issue, it will work for every key.
+```elixir
+config :confex_consul,
+  circuit_breaker_switch: true,
+  circuit_breaker_option: {{:standard, 1, 2_000}, {:reset, 3_000}}
+```
+For example, the above configuration means that if get an error response within 2 seconds, the next requests will not be sent. Reset after 3 seconds.  
+You can find more option details in [fuse document](https://hexdocs.pm/fuse/).
+
 ### Config for consul_kv
 The [consul_kv](https://github.com/elixir-consul/consul_kv) is a dependency library that sends requests to Consul KV Store. We can modify it's config:
 ```elixir
