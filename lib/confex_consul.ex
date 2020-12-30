@@ -11,19 +11,17 @@ defmodule ConfexConsul do
   def fetch_value(key) do
     case ConfexConsul.LocalCache.get(key) do
       {:hit, value} -> value
-      :miss -> get_from_consul_and_cache(key)
+      :miss -> get_from_consul_and_write_cache(key)
     end
   end
 
   @doc false
-  defp get_from_consul_and_cache(key) do
+  defp get_from_consul_and_write_cache(key) do
     with {:ok, value} <- ConfexConsul.ConsulKv.get_value(key),
          _ <- ConfexConsul.LocalCache.put(key, {:ok, value}) do
       {:ok, value}
     else
-      {:error, reason} ->
-        Logger.error("<#{__MODULE__}> get_from_consul_and_cache error: #{inspect(reason)}")
-
+      {:error, _reason} ->
         :error
     end
   end

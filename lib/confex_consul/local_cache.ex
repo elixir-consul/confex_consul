@@ -44,13 +44,13 @@ defmodule ConfexConsul.LocalCache do
     {:noreply, %{state | timer: timer}}
   rescue
     e ->
-      Logger.error("<#{__MODULE__}> refresh cache error: #{inspect(e)}")
+      :ok = :telemetry.execute([:local_cache, :refresh_key, :error], %{}, %{error: e})
       timer = Process.send_after(self(), :refresh, @refresh_interval)
       {:noreply, %{state | timer: timer}}
   end
 
   @doc false
-  def refresh_cache() do
+  def refresh_cache do
     get_confex_consul_config_apps()
     |> Enum.each(&refresh_cache_by_app/1)
   end
@@ -75,6 +75,8 @@ defmodule ConfexConsul.LocalCache do
     |> Application.get_all_env()
     |> Enum.filter(fn {_, val} -> is_tuple(val) and {:via, ConfexConsul} == elem(val, 0) end)
     |> Enum.each(fn {_, app_val} -> refresh_cache_by_key(app_val) end)
+
+    :ok = :telemetry.execute([:local_cache, :refresh_app, :done], %{}, %{app: app})
   end
 
   @doc false
@@ -99,11 +101,7 @@ defmodule ConfexConsul.LocalCache do
       {:ok, _} = value ->
         put(key, value)
 
-      {:error, reason} ->
-        Logger.error(
-          "<#{__MODULE__}> get value for `#{inspect(key)}` from consul KV failed: #{inspect(reason)}"
-        )
-
+      {:error, _reason} ->
         maybe_put_default_value(key, default_value)
     end
   end

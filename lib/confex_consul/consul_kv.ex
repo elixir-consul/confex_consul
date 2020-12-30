@@ -7,19 +7,37 @@ defmodule ConfexConsul.ConsulKv do
   alias ConfexConsul.Utils
 
   @doc """
-  Get value from Consul KV Store
+  Get value from Consul KV Store, then execute telemetry event by result
   There are two type of keys:
     1. "decode: " + consul_key, get value by consul_key, then decode it by Jason
     1. consul_key, get value by consul_key directly
   """
   @spec get_value(String.t()) :: {:ok, any()} | {:error, any()}
-  def get_value("decode: " <> consul_key) do
+  def get_value(consul_key) do
+    {duration, result} = :timer.tc(fn -> fetch_value(consul_key) end)
+
+    measurements = %{duration: duration / 1000}
+
+    metadata =
+      case result do
+        {:ok, value} -> %{key: consul_key, status: :ok, value: value}
+        {:error, reason} -> %{key: consul_key, status: :error, reason: reason}
+      end
+
+    :ok = :telemetry.execute([:consul_kv, :fetch_value, :done], measurements, metadata)
+
+    result
+  end
+
+  ## Helpers
+
+  defp fetch_value("decode: " <> consul_key) do
     with {:ok, value} <- get_value(consul_key) do
       Jason.decode(value)
     end
   end
 
-  def get_value(consul_key) do
+  defp fetch_value(consul_key) do
     with :ok <- ask_fuse(consul_key),
          {:ok, %ConsulKv{value: value}} <- ConsulKv.single_get(consul_key) do
       {:ok, value}
