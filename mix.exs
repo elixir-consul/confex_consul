@@ -24,6 +24,7 @@ defmodule ConfexConsul.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:fuse, "~> 2.4"},
       {:confex, "~> 3.5"},
       {:consul_kv, "~> 0.1"},
       {:excoveralls, "~> 0.13.3", only: [:test]}

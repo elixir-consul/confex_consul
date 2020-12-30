@@ -23,5 +23,16 @@ defmodule ConfexConsul.ConsulKvTest do
       assert {:ok, %{"a" => 1, "b" => 2, "c" => 3}} =
                ConfexConsul.ConsulKv.get_value("decode: #{key}")
     end
+
+    test "circuit_breaker work when get value" do
+      assert {:error, :not_found} = ConfexConsul.ConsulKv.get_value("not_exist")
+      assert {:error, :not_found} = ConfexConsul.ConsulKv.get_value("not_exist")
+      assert {:error, :not_found} = ConfexConsul.ConsulKv.get_value("not_exist")
+
+      assert {:error, :fallback} = ConfexConsul.ConsulKv.get_value("not_exist")
+
+      Process.sleep(5_000)
+      assert {:error, :not_found} = ConfexConsul.ConsulKv.get_value("not_exist")
+    end
   end
 end

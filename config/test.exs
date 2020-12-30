@@ -19,6 +19,10 @@ config :confex_consul,
   json_type_with_key_with_default:
     {{:via, ConfexConsul}, :string, "decode: #{json_prefix}/key_4", %{"default_value_4" => false}}
 
+config :confex_consul,
+  circuit_breaker_switch: true,
+  circuit_breaker_option: {{:standard, 2, 2_000}, {:reset, 3_000}}
+
 config :consul_kv,
   consul_recv_timeout: 1000,
   consul_connect_timeout: 1000,
